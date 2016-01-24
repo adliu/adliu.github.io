@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Java 中的 fail-fast 机制（一） | Liu Dong&#39; Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="前段时间偶然接触到一个 Java 异常，叫 ConcurrentModificationException，字面理解是并发修改异常。第一次见，蛮新鲜，所以花了点儿时间去研究了一下，结果发现可以挖掘的内容还蛮多。通过它，可以抽丝剥茧，一步步揭开 Java 中快速失败机制 fail-fast 的神秘面纱。我脑容量小，打算分两次笔记纪录一下，今天是第一篇，先对异常 ConcurrentModificat">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java 中的 fail-fast 机制（一）">
+<meta property="og:url" content="http://liudong.site/2016/01/24/fail-fast/index.html">
+<meta property="og:site_name" content="Liu Dong' Blog">
+<meta property="og:description" content="前段时间偶然接触到一个 Java 异常，叫 ConcurrentModificationException，字面理解是并发修改异常。第一次见，蛮新鲜，所以花了点儿时间去研究了一下，结果发现可以挖掘的内容还蛮多。通过它，可以抽丝剥茧，一步步揭开 Java 中快速失败机制 fail-fast 的神秘面纱。我脑容量小，打算分两次笔记纪录一下，今天是第一篇，先对异常 ConcurrentModificat">
+<meta property="og:updated_time" content="2016-01-24T17:09:47.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Java 中的 fail-fast 机制（一）">
+<meta name="twitter:description" content="前段时间偶然接触到一个 Java 异常，叫 ConcurrentModificationException，字面理解是并发修改异常。第一次见，蛮新鲜，所以花了点儿时间去研究了一下，结果发现可以挖掘的内容还蛮多。通过它，可以抽丝剥茧，一步步揭开 Java 中快速失败机制 fail-fast 的神秘面纱。我脑容量小，打算分两次笔记纪录一下，今天是第一篇，先对异常 ConcurrentModificat">
+  
+  
+    <link rel="icon" href="favicon.png">
+  
+  
+ <link href='https://fonts.googleapis.com/css?family=Open+Sans:400italic,400,600' rel='stylesheet' type='text/css'>
+ <link href='https://fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
+
+
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+  <link rel="stylesheet" href="/font-awesome/css/font-awesome.min.css" type="text/css">
+  
+
+  
+
+  
+</head>
+<body>
+  <div id="container">
+    <header id="header">
+  <div id="header-main" class="header-inner">
+    <div class="outer">
+      <a href="/" id="logo"><i class="logo" style="background-image: url(/css/images/logo.jpg)"></i><span class="site-title">Liu Dong&#39; Blog</span></a>
+      <nav id="main-nav">
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+          <a class="main-nav-link" href="/categories">Categories</a>
+        
+          <a class="main-nav-link" href="/tags">Tags</a>
+        
+          <a class="main-nav-link" href="/about">About</a>
+        
+      </nav>
+      
+        <nav id="sub-nav">
+          <div class="profile" id="profile-nav">
+            <a id="profile-anchor" href="javascript:;"><img class="avatar" src="/css/images/avatar.jpg"><i class="fa fa-caret-down"></i></a>
+          </div>
+        </nav>
+      
+      <div id="search-form-wrap">
+        
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="搜索"><button type="submit" class="search-form-submit"> </button><input type="hidden" name="sitesearch" value="http://liudong.site"></form>
+        
+      </div>
+    </div>
+  </div>
+  <div id="main-nav-mobile" class="header-sub header-inner">
+    <table class="menu outer">
+      <tr>
+        
+          <td><a class="main-nav-link" href="/">Home</a></td>
+        
+          <td><a class="main-nav-link" href="/archives">Archives</a></td>
+        
+          <td><a class="main-nav-link" href="/categories">Categories</a></td>
+        
+          <td><a class="main-nav-link" href="/tags">Tags</a></td>
+        
+          <td><a class="main-nav-link" href="/about">About</a></td>
+        
+        <td>
+          
+            <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="搜索"><input type="hidden" name="sitesearch" value="http://liudong.site"></form>
+          
+        </td>
+      </tr>
+    </table>
+  </div>
+</header>
+
+    <div class="outer">
+      
+        <aside id="profile">
+  <div class="inner profile-inner">
+    <div class="base-info profile-block">
+      <img id="avatar" src="/css/images/avatar.jpg">
+      <h2 id="name">Liu Dong</h2>
+      <h3 id="title">您看我萌吗</h3>
+      <span id="location"><i class="fa fa-map-marker"></i>Shanghai, China</span>
+      <a id="follow" href="https://github.com/adliu/">关注我</a>
+    </div>
+    <div class="article-info profile-block">
+      <div class="article-info-block">
+        2
+        <span>文章</span>
+      </div>
+      <div class="article-info-block">
+        3
+        <span>标签</span>
+      </div>
+    </div>
+    
+    <div class="contact-info profile-block">
+      <table class="contact-list">
+        <tr>
+          
+          <td><a href="http://github.com/adliu" target="_blank" title="github"><i class="fa fa-github"></i></a></td>
+          
+          <td><a href="/#" target="_blank" title="twitter"><i class="fa fa-twitter"></i></a></td>
+          
+          <td><a href="/#" target="_blank" title="facebook"><i class="fa fa-facebook"></i></a></td>
+          
+          <td><a href="/#" target="_blank" title="dribbble"><i class="fa fa-dribbble"></i></a></td>
+          
+          <td><a href="/atom.xml" target="_blank" title="rss"><i class="fa fa-rss"></i></a></td>
+          
+        </tr>
+      </table>
+    </div>
+    
+    
+  </div>
+</aside>
+
+      
+      <section id="main"><article id="post-fail-fast" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Java 中的 fail-fast 机制（一）
+    </h1>
+  
+
+        <div class="article-meta">
+          
+  <div class="article-date">
+    <i class="fa fa-calendar"></i>
+    <a href="/2016/01/24/fail-fast/">
+      <time datetime="2016-01-24T14:46:34.000Z" itemprop="datePublished">2016-01-24</time>
+    </a>
+  </div>
+
+
+          
+  <div class="article-category">
+  	<i class="fa fa-folder"></i>
+    <a class="article-category-link" href="/categories/Java/">Java</a>
+  </div>
+
+        </div>
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+                
+        <p>前段时间偶然接触到一个 Java 异常，叫 ConcurrentModificationException，字面理解是并发修改异常。第一次见，蛮新鲜，所以花了点儿时间去研究了一下，结果发现可以挖掘的内容还蛮多。通过它，可以抽丝剥茧，一步步揭开 Java 中快速失败机制 fail-fast 的神秘面纱。我脑容量小，打算分两次笔记纪录一下，今天是第一篇，先对异常 ConcurrentModificationException进行一个简单的介绍。</p>
+<a id="more"></a>
+<h2 id="1-_ConcurrentModificationException__u521D_u63A2"><a href="#1-_ConcurrentModificationException__u521D_u63A2" class="headerlink" title="1. ConcurrentModificationException 初探"></a>1. ConcurrentModificationException 初探</h2><p>要想弄清楚并发修改异常 ConcurrentModificationException 这一概念，最好的方式必然是查阅 JDK 官方文档。据 JDK 1.7 的官方文档（详戳<a href="http://docs.oracle.com/javase/7/docs/api/java/util/ConcurrentModificationException.html" target="_blank" rel="external">这里</a>）显示，ConcurrentModificationException 继承自 java.lang.RuntimeException 类，属于运行时异常，关于其抛出条件，文档中有如下表述：</p>
+<blockquote>
+<p>This exception may be thrown by methods that have detected concurrent modification of an object when such modification is not permissible.     </p>
+</blockquote>
+<p>得，等于没说，从异常名就差不多可以推断出个七七八八了。。。作者当然知道这样说太抽象，于是紧接着举了一个例子：<strong>当一个线程在迭代访问一个集合时，不允许其他线程对该集合进行修改</strong>，因为这会导致迭代结果的不确定，而一旦发生这种情况，一些迭代器（iterator）便会抛出 ConcurrentModificationException，这类 iterator 便被称作 <strong>fail-fast iterator</strong>。fail-fast 的意思就是快速失败，快速抛出异常，以避免未来发生不确定性风险，请记住这个概念，因为它在后面会反复出现。  </p>
+<p>ConcurrentModificationException 并不只会在多线程并发条件下被触发，文档后面又举了一个单线程环境下抛出该异常的例子：<strong>如果某个线程在用 fail-fast iterator 迭代访问某个集合的同时对该集合进行了修改，那么该 fail-fast iterator 也将抛出ConcurrentModificationException</strong>。请注意，这里的并发修改异常同样也是由 <strong>fail-fast iterator</strong> 抛出。</p>
+<p>文档最后还交代了快速失败机制 <strong>fail-fast</strong> 的注意事项，里面有一句话需要留意：</p>
+<blockquote>
+<p>Fail-fast operations throw ConcurrentModificationException on a best-effort basis.</p>
+</blockquote>
+<p><strong>fail-fast</strong> 尽最大努力抛出 ConcurrentModificationException 异常，不能保证在发生上述两种情况时会触发快速失败机制，这里先记一下，后面将会通过示例给出解释。</p>
+<p>到这里已经有点晕了，有必要做个小结以加深一点认识：<strong>ConcurrentModificationException 是一种运行时异常，在单线程和多线程环境下该异常都将被 fail-fast iterator 对象尽最大努力抛出，抛出条件是通过 fail-fast iterator 对象对一个集合进行迭代访问时该集合被修改</strong>。</p>
+<h2 id="2-_ConcurrentModificationException__u793A_u4F8B"><a href="#2-_ConcurrentModificationException__u793A_u4F8B" class="headerlink" title="2. ConcurrentModificationException 示例"></a>2. ConcurrentModificationException 示例</h2><p>下面就从最常见的集合类 ArrayList 入手，通过两个例子来看看到底什么情况下会抛出该异常。</p>
+<h3 id="2-1__u5355_u7EBF_u7A0B"><a href="#2-1__u5355_u7EBF_u7A0B" class="headerlink" title="2.1 单线程"></a>2.1 单线程</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.ArrayList;</span><br><span class="line"><span class="keyword">import</span> java.util.List;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        List&lt;String&gt; list = <span class="keyword">new</span> ArrayList&lt;String&gt;();</span><br><span class="line">        list.add(<span class="string">"111"</span>);</span><br><span class="line">        list.add(<span class="string">"222"</span>);</span><br><span class="line">        list.add(<span class="string">"333"</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (String item : list) &#123;</span><br><span class="line">            System.out.println(item);</span><br><span class="line">            <span class="comment">//list.add("444");</span></span><br><span class="line">            list.remove(item);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行该段代码将抛出 ConcurrentModificationException，无论 for 循环中是 add 方法还是 remove 方法，原因很简单，for 循环中在遍历 list 元素的同时对 list 进行了修改，发生了写操作。</p>
+<p>细心的朋友可能会有疑问：上文说过，抛出 ConcurrentModificationException 异常的是 fail-fast iterator 对象，但这里并没有用到任何迭代器嘛。对的，这里的确没有显式运用迭代器，而是使用 foreach 语法来实现对 ArrayList 元素的遍历，但“没有显式使用”跟“没有使用”还是不能划上等号的，我们可以通过 javap 工具来 check 一下 foreach 语法的实现逻辑，看看真实的情况到底如何。</p>
+<p>从 Test 类生成的字节码中截取如下一小段：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">27: ldc           #7                  // String 333</span><br><span class="line">29: invokeinterface #5,  2            // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z</span><br><span class="line">34: pop           </span><br><span class="line">35: aload_1       </span><br><span class="line">36: invokeinterface #8,  1            // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;</span><br><span class="line">41: astore_2      </span><br><span class="line">42: aload_2       </span><br><span class="line">43: invokeinterface #9,  1            // InterfaceMethod java/util/Iterator.hasNext:()Z</span><br><span class="line">48: ifeq          71</span><br><span class="line">51: aload_2       </span><br><span class="line">52: invokeinterface #10,  1           // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;</span><br></pre></td></tr></table></figure>
+<p>每一行字节码的具体含义这里不做过多深究，从 36、43 和 52 行可以捕捉到几个迭代器相关的关键词，这些关键词恰好说明 foreach 语法的内部实现还是用到了迭代器  iterator，只不过 JDK 将这些实现细节对开发者屏蔽了而已。因此，第一段示例代码跟前文对并发修改异常触发条件的描述并不冲突。</p>
+<p>从 JDK 1.5 开始，Java 引入了 foreach 语法，跟 foreach 同时诞生的是 Iterable 接口，源码文档中对该接口的概要性描述只有一句话：</p>
+<blockquote>
+<p>Implementing this interface allows an object to be the target of the “foreach” statement.</p>
+</blockquote>
+<p>也就是说，如果我们自己的类实现了 Iterable 接口的话，也是可以通过foreach语句来访问元素对象的。又跑偏了，下面看看多线程代码示例。</p>
+<h3 id="2-2__u591A_u7EBF_u7A0B"><a href="#2-2__u591A_u7EBF_u7A0B" class="headerlink" title="2.2 多线程"></a>2.2 多线程</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.util.ArrayList;</span><br><span class="line"><span class="keyword">import</span> java.util.List;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> List&lt;Integer&gt; list = <span class="keyword">new</span> ArrayList&lt;Integer&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100</span>; i++) &#123;</span><br><span class="line">            list.add(i);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        Thread t1 = <span class="keyword">new</span> IteratorThread(); <span class="comment">//遍历</span></span><br><span class="line">        Thread t2 = <span class="keyword">new</span> ModificationThread(); <span class="comment">//修改</span></span><br><span class="line"></span><br><span class="line">        t1.start();</span><br><span class="line">        t2.start();</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">IteratorThread</span> <span class="keyword">extends</span> <span class="title">Thread</span></span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="annotation">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> (Integer item : list) &#123;</span><br><span class="line"></span><br><span class="line">                System.out.println(item);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">ModificationThread</span> <span class="keyword">extends</span> <span class="title">Thread</span></span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="annotation">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100</span>; i++) &#123;</span><br><span class="line"></span><br><span class="line">                list.add(i);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>该段代码中线程 t1 负责遍历整数列表，t2 负责向列表中添加元素，反复运行该段代码，结果是<strong>有时抛出 ConcurrentModificationException，有时正常运行</strong>，这又是怎么回事呢？</p>
+<p>其实，这里就跟前文提醒大家留意的那句“ <strong>fail-fast</strong> 尽最大努力抛出异常”紧密相关，详细原因将会在下一篇笔记中作出说明。</p>
+<h2 id="3-__u5C3E_u58F0"><a href="#3-__u5C3E_u58F0" class="headerlink" title="3. 尾声"></a>3. 尾声</h2><p>诶，从小怕写作文的人写起笔记来简直捉急的要命，说是提笔千钧一点都不过分，心塞塞的。。。但用文字准确表达自己的想法又是一项不可或缺的能力，没办法，只能硬着头皮多写写。</p>
+<p>新的一年，又发现一棵需要点亮的技能树，前路漫漫啊！</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://liudong.site/2016/01/24/fail-fast/" data-id="cijssw914000acp5myj9b42wh" class="article-share-link">分享到</a>
+      
+        <a href="http://liudong.site/2016/01/24/fail-fast/#disqus_thread" class="article-comment-link">评论</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/并发/">并发</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2016/01/18/hello-world/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">下一篇</strong>
+      <div class="article-nav-title">Hello World，Hexo建站二三事</div>
+    </a>
+  
+</nav>
+
+
+  
+</article>
+
+
+<section id="comments">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+
+</section>
+      
+        <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget">
+      <ul id="recent-post" class="">
+        
+          <li>
+            
+            <div class="item-thumbnail">
+              <a href="/2016/01/24/fail-fast/" class="thumbnail">
+  
+    <span class="thumbnail-image thumbnail-none"></span>
+  
+</a>
+            </div>
+            
+            <div class="item-inner">
+              <p class="item-category"><a class="article-category-link" href="/categories/Java/">Java</a></p>
+              <p class="item-title"><a href="/2016/01/24/fail-fast/" class="title">Java 中的 fail-fast 机制（一）</a></p>
+              <p class="item-date"><time datetime="2016-01-24T14:46:34.000Z" itemprop="datePublished">2016-01-24</time></p>
+            </div>
+          </li>
+        
+          <li>
+            
+            <div class="item-thumbnail">
+              <a href="/2016/01/18/hello-world/" class="thumbnail">
+  
+    <span style="background-image:url(/img/yosemite.jpg
+)" alt="Hello World，Hexo建站二三事" class="thumbnail-image"></span>
+  
+</a>
+            </div>
+            
+            <div class="item-inner">
+              <p class="item-category"><a class="article-category-link" href="/categories/Hexo/">Hexo</a></p>
+              <p class="item-title"><a href="/2016/01/18/hello-world/" class="title">Hello World，Hexo建站二三事</a></p>
+              <p class="item-date"><time datetime="2016-01-17T19:52:54.000Z" itemprop="datePublished">2016-01-18</time></p>
+            </div>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Hexo/">Hexo</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java/">Java</a><span class="category-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Github/">Github</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hexo/">Hexo</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/并发/">并发</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Github/" style="font-size: 10px;">Github</a> <a href="/tags/Hexo/" style="font-size: 10px;">Hexo</a> <a href="/tags/并发/" style="font-size: 10px;">并发</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/01/">一月 2016</a><span class="archive-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+  
+  <div id="toTop" class="fa fa-chevron-up"></div>
+</aside>
+      
+    </div>
+    <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2016 Liu Dong<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>. Theme from <a href="https://github.com/ppoffice/hexo-theme-icarus">icarus</a>.&nbsp;
+<script type="text/javascript">
+	var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");
+	document.write(unescape("%3Cspan id='cnzz_stat_icon_1257182027'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s4.cnzz.com/z_stat.php%3Fid%3D1257182027%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));
+</script>
+
+
+    </div>
+  </div>
+</footer>
+
+
+    
+
+<script>
+  var disqus_shortname = 'liudongblog';
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+
+
+
+ <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+
+
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css" type="text/css">
+  <script src="/fancybox/jquery.fancybox.pack.js" type="text/javascript"></script>
+
+
+<script src="/js/script.js" type="text/javascript"></script>
+
+  </div>
+</body>
+</html>

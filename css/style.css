@@ -925,21 +925,22 @@ a.article-title:hover {
   border-left: 4px solid #eee;
 }
 .article-entry blockquote:before {
-  top: 20px;
-  left: 10px;
-  content: "\f10d";
+  top: 4px;
+  left: 2px;
+}
+.article-entry #    content: "\f10d" {
   color: #e2e2e2;
-  font-size: 32px;
+  font-size: 28px;
   font-family: FontAwesome;
-  text-align: center;
+  text-align: left;
   position: absolute;
 }
-.article-entry blockquote footer {
+.article-entry footer {
   font-size: 16px;
   margin: 1.6em 0;
   font-family: "Microsoft YaHei", Verdana, sans-serif, "open sans", "Helvetica Neue", "Microsoft Yahei", Helvetica, Arial, sans-serif;
 }
-.article-entry blockquote footer cite:before {
+.article-entry footer cite:before {
   content: "—";
   padding: 0 0.5em;
 }
