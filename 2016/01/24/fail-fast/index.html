@@ -11,7 +11,7 @@
 <meta property="og:url" content="http://liudong.site/2016/01/24/fail-fast/index.html">
 <meta property="og:site_name" content="Liu Dong' Blog">
 <meta property="og:description" content="前段时间偶然接触到一个 Java 异常，叫 ConcurrentModificationException，字面理解是并发修改异常。第一次见，蛮新鲜，所以花了点儿时间去研究了一下，结果发现可以挖掘的内容还蛮多。通过它，可以抽丝剥茧，一步步揭开 Java 中快速失败机制 fail-fast 的神秘面纱。我脑容量小，打算分两次笔记纪录一下，今天是第一篇，先对异常 ConcurrentModificat">
-<meta property="og:updated_time" content="2016-01-27T07:03:07.000Z">
+<meta property="og:updated_time" content="2016-02-21T13:28:10.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Java 中的 fail-fast 机制（一）">
 <meta name="twitter:description" content="前段时间偶然接触到一个 Java 异常，叫 ConcurrentModificationException，字面理解是并发修改异常。第一次见，蛮新鲜，所以花了点儿时间去研究了一下，结果发现可以挖掘的内容还蛮多。通过它，可以抽丝剥茧，一步步揭开 Java 中快速失败机制 fail-fast 的神秘面纱。我脑容量小，打算分两次笔记纪录一下，今天是第一篇，先对异常 ConcurrentModificat">
@@ -184,7 +184,7 @@
 <p><strong>fail-fast</strong> 尽最大努力抛出 ConcurrentModificationException 异常，不能保证在发生上述两种情况时会触发快速失败机制，这里先记一下，后面将会通过示例给出解释。</p>
 <p>到这里已经有点晕了，有必要对ConcurrentModificationException的概念做个小结：</p>
 <ul>
-<li>(1) 是一种运行时异常;</li>
+<li>(1) 是一种运行时异常；</li>
 <li>(2) 在单线程和多线程环境下都可能被抛出；</li>
 <li>(3) 抛出该异常的是 fail-fast iterator 对象；</li>
 <li>(4) 抛出条件是对一个集合进行迭代访问时该集合被修改；</li>
