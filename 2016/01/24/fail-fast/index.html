@@ -11,7 +11,8 @@
 <meta property="og:url" content="http://liudong.site/2016/01/24/fail-fast/index.html">
 <meta property="og:site_name" content="Liu Dong' Blog">
 <meta property="og:description" content="前段时间偶然接触到一个 Java 异常，叫 ConcurrentModificationException，字面理解是并发修改异常。第一次见，蛮新鲜，所以花了点儿时间去研究了一下，结果发现可以挖掘的内容还蛮多。通过它，可以抽丝剥茧，一步步揭开 Java 中快速失败机制 fail-fast 的神秘面纱。我脑容量小，打算分两次笔记纪录一下，今天是第一篇，先对异常 ConcurrentModificat">
-<meta property="og:updated_time" content="2016-02-21T13:28:10.000Z">
+<meta property="og:image" content="http://liudong.site/img/flower.jpg">
+<meta property="og:updated_time" content="2017-04-09T07:07:17.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Java 中的 fail-fast 机制（一）">
 <meta name="twitter:description" content="前段时间偶然接触到一个 Java 异常，叫 ConcurrentModificationException，字面理解是并发修改异常。第一次见，蛮新鲜，所以花了点儿时间去研究了一下，结果发现可以挖掘的内容还蛮多。通过它，可以抽丝剥茧，一步步揭开 Java 中快速失败机制 fail-fast 的神秘面纱。我脑容量小，打算分两次笔记纪录一下，今天是第一篇，先对异常 ConcurrentModificat">
@@ -169,7 +170,7 @@
     <div class="article-entry" itemprop="articleBody">
       
                 
-        <p>前段时间偶然接触到一个 Java 异常，叫 ConcurrentModificationException，字面理解是并发修改异常。第一次见，蛮新鲜，所以花了点儿时间去研究了一下，结果发现可以挖掘的内容还蛮多。通过它，可以抽丝剥茧，一步步揭开 Java 中快速失败机制 fail-fast 的神秘面纱。我脑容量小，打算分两次笔记纪录一下，今天是第一篇，先对异常 ConcurrentModificationException进行一个简单的介绍。</p>
+        <p><img src="/img/flower.jpg" alt=""><br>前段时间偶然接触到一个 Java 异常，叫 ConcurrentModificationException，字面理解是并发修改异常。第一次见，蛮新鲜，所以花了点儿时间去研究了一下，结果发现可以挖掘的内容还蛮多。通过它，可以抽丝剥茧，一步步揭开 Java 中快速失败机制 fail-fast 的神秘面纱。我脑容量小，打算分两次笔记纪录一下，今天是第一篇，先对异常 ConcurrentModificationException进行一个简单的介绍。</p>
 <a id="more"></a>
 <h2 id="1-_ConcurrentModificationException__u521D_u63A2"><a href="#1-_ConcurrentModificationException__u521D_u63A2" class="headerlink" title="1. ConcurrentModificationException 初探"></a>1. ConcurrentModificationException 初探</h2><p>要想弄清楚并发修改异常 ConcurrentModificationException 这一概念，最好的方式必然是查阅 JDK 官方文档。据 JDK 1.7 的官方文档（详戳<a href="http://docs.oracle.com/javase/7/docs/api/java/util/ConcurrentModificationException.html" target="_blank" rel="external">这里</a>）显示，ConcurrentModificationException 继承自 java.lang.RuntimeException 类，属于运行时异常，关于其抛出条件，文档中有如下表述：</p>
 <blockquote>
@@ -211,7 +212,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://liudong.site/2016/01/24/fail-fast/" data-id="cikwlho6z000afc5m78ajaebx" class="article-share-link">分享到</a>
+      <a data-url="http://liudong.site/2016/01/24/fail-fast/" data-id="cj1acka0b000a28s673vhsn9u" class="article-share-link">分享到</a>
       
         <a href="http://liudong.site/2016/01/24/fail-fast/#disqus_thread" class="article-comment-link">评论</a>
       
@@ -258,7 +259,8 @@
             <div class="item-thumbnail">
               <a href="/2016/01/24/fail-fast/" class="thumbnail">
   
-    <span class="thumbnail-image thumbnail-none"></span>
+    <span style="background-image:url(/img/flower.jpg
+)" alt="Java 中的 fail-fast 机制（一）" class="thumbnail-image"></span>
   
 </a>
             </div>
@@ -337,7 +339,7 @@
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2016 Liu Dong<br>
+      &copy; 2016 - 2017 Liu Dong<br>
       Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>. Theme from <a href="https://github.com/ppoffice/hexo-theme-icarus">icarus</a>.&nbsp;
 <script type="text/javascript">
 	var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");
